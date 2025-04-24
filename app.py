@@ -1,16 +1,12 @@
-# app.py
 from flask import Flask, request, Response, abort
 import requests
 import ast
+import os
 
 app = Flask(__name__)
-RAPIDAPI_KEY = "87e8559442mshbf9de432bb5b1cfp191e31jsnf3bfe3fa5aac"
+RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY")
 
 def safe_eval(expr: str) -> float:
-    """
-    Evaluate an arithmetic expression containing integers, +, -, *, /, and parentheses.
-    Raises ValueError on any unsupported syntax.
-    """
     node = ast.parse(expr, mode='eval')
     def _eval(n):
         if isinstance(n, ast.Expression):
@@ -82,27 +78,25 @@ def handle_airport_temp(iata: str) -> float:
 def handle_stock_price(symbol: str) -> float:
     symbol = symbol.upper()
     if not (1 <= len(symbol) <= 5 and symbol.isalnum()):
-        raise ValueError("Stock symbol must be 1–5 alphanumeric characters")
+        raise ValueError("Stock symbol must be 1-5 alphanumeric characters")
 
     if not RAPIDAPI_KEY:
         raise ValueError("Missing RapidAPI key (set RAPIDAPI_KEY env-var)")
-    url = f"https://apidojo-yahoo-finance-v1.p.rapidapi.com/market/v2/get-summary"
+    url = f"https://apidojo-yahoo-finance-v1.p.rapidapi.com/market/v2/get-quotes"
     headers = {
         "x-rapidapi-key":  RAPIDAPI_KEY,
         "x-rapidapi-host": "apidojo-yahoo-finance-v1.p.rapidapi.com",
     }
-    params = {"symbol": symbol, "region": "US"}
+    params = {"symbols": symbol, "region": "US"}
 
     resp = requests.get(url, params=params, headers=headers, timeout=5)
     
-    stock_list = resp.json().get("marketSummaryAndSparkResponse", {}).get("result", [])
+    stock_list = resp.json().get("quoteResponse", {}).get("result", [])
     if not stock_list:
         raise ValueError(f"Price for {symbol} not available")
-
     price_raw = (
         stock_list[0]
-        .get("regularMarketPrice", {})
-        .get("raw")
+        .get("regularMarketPrice", None)
     )
 
     if price_raw is None:
