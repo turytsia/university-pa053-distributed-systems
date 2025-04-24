@@ -37,14 +37,14 @@ def index():
     }
     present = [k for k in ops if k in params]
     if len(present) != 1:
-        abort(400, "Exactly one of queryAirportTemp, queryStockPrice or queryEval must be provided")
+        abort(200, "Exactly one of queryAirportTemp, queryStockPrice or queryEval must be provided")
     key = present[0]
     try:
         result = ops[key](params[key])
     except requests.RequestException as e:
         abort(502, f"Upstream service error: {e}")
     except (IndexError, KeyError, ValueError) as e:
-        abort(400, str(e))
+        abort(200, str(e))
 
     accept = request.headers.get('Accept', '')
     if 'application/xml' in accept or 'text/xml' in accept:
